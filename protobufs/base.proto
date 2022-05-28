@@ -4,6 +4,7 @@ syntax = "proto3";
 
 package ridesharing;
 
+option go_package = "./genproto";
 
 // --- Common ---
 
@@ -62,6 +63,7 @@ message SeekForTripAsDriverResponse {
 service MappingService {
     rpc CalculateDistance (CalculateDistanceRequest) returns (CalculateDistanceResponse);
     rpc MakeTimeEstimation (MakeTimeEstimationRequest) returns (MakeTimeEstimationResponse);
+    rpc DoGeocoding (DoGeocodingRequest) returns (DoGeocodingResponse);
 }
 
 message Route {
@@ -83,6 +85,14 @@ message MakeTimeEstimationRequest {
 
 message MakeTimeEstimationResponse {
     float eta = 1;
+}
+
+message DoGeocodingRequest {
+    string address = 1;
+}
+
+message DoGeocodingResponse {
+    Location location = 1;
 }
 
 
