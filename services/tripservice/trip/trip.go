@@ -10,9 +10,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-const (
-)
-
 type Trip struct {
 	ID          primitive.ObjectID  `bson:"_id,omitempty"`
 	RiderID     string              `bson:"rider_id"`
@@ -53,4 +50,24 @@ func (r *Repository) DeleteTrip(ctx context.Context, tripID string) *TripError {
 		return NewInternalTripError(err)
 	}
 	return nil
+}
+
+func (r *Repository) GetByStartLocationInterval(ctx context.Context, minLoc, maxLoc Location) ([]Trip, *TripError) {
+	opts := options.FindOptions{}
+	opts.SetSort(bson.D{{"created_at", 1}})
+	cur, err := r.c.Find(ctx, bson.D{
+		{"start", bson.D{
+			{"$gte", minLoc},
+			{"$lte", maxLoc},
+		}},
+	}, &opts)
+	if err != nil {
+		return []Trip{}, NewInternalTripError(err)
+	}
+
+	var docs []Trip
+	if err := cur.All(ctx, &docs); err != nil {
+		return []Trip{}, NewInternalTripError(err)
+	}
+	return docs, nil
 }

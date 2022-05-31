@@ -11,6 +11,10 @@ import (
 	"github.com/baturalpk/ridesharing-services/services/tripservice/trip"
 )
 
+const (
+	TripSeekingRadius = 0.5
+)
+
 func RegisterServer(gsv *grpc.Server, r *trip.Repository) {
 	sv := &server{repo: r}
 	proto.RegisterTripServiceServer(gsv, sv)
@@ -53,6 +57,38 @@ func (s *server) CancelTrip(ctx context.Context, req *proto.CancelTripRequest) (
 }
 
 func (s *server) SeekForTripAsDriver(driverSv proto.TripService_SeekForTripAsDriverServer) error {
-	//TODO implement me
-	panic("implement me")
+	for {
+		req, err := driverSv.Recv()
+		if err != nil {
+			return status.Error(codes.Internal, "Internal error")
+		}
+
+		dloc := req.GetDriverLocation()
+		ts, err2 := s.repo.GetByStartLocationInterval(
+			driverSv.Context(),
+			trip.Location{
+				Lat:  dloc.Latitude - TripSeekingRadius,
+				Long: dloc.Longitude - TripSeekingRadius,
+			},
+			trip.Location{
+				Lat:  dloc.Latitude + TripSeekingRadius,
+				Long: dloc.Longitude + TripSeekingRadius,
+			},
+		)
+		if len(ts) > 0 && err2 == nil {
+			t := ts[0]
+			return driverSv.Send(&proto.SeekForTripAsDriverResponse{
+				TripId:  t.ID.Hex(),
+				RiderId: t.RiderID,
+				Start: &proto.Location{
+					Latitude:  t.Start.Lat,
+					Longitude: t.Start.Long,
+				},
+				Destination: &proto.Location{
+					Latitude:  t.Destination.Lat,
+					Longitude: t.Destination.Long,
+				},
+			})
+		}
+	}
 }
