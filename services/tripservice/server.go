@@ -23,10 +23,16 @@ type server struct {
 
 func (s *server) RequestTrip(ctx context.Context, req *proto.RequestTripRequest) (*proto.RequestTripResponse, error) {
 	t := trip.Trip{
-		RiderID:     req.GetRiderId(),
-		Start:       req.GetStart(),
-		Destination: req.GetDestination(),
-		RideType:    req.GetRideType(),
+		RiderID: req.GetRiderId(),
+		Start: trip.Location{
+			Lat:  req.GetStart().GetLatitude(),
+			Long: req.GetStart().GetLongitude(),
+		},
+		Destination: trip.Location{
+			Lat:  req.GetDestination().GetLatitude(),
+			Long: req.GetDestination().GetLongitude(),
+		},
+		RideType: req.GetRideType(),
 	}
 	id, err := s.repo.CreateTrip(ctx, t)
 	if err != nil {
@@ -41,7 +47,7 @@ func (s *server) CancelTrip(ctx context.Context, req *proto.CancelTripRequest) (
 		if err.Type == trip.ClientRelatedError {
 			return nil, status.Errorf(codes.InvalidArgument, err.Reason)
 		}
-		return nil, status.Errorf(codes.InvalidArgument, err.Reason)
+		return nil, status.Errorf(codes.Internal, err.Reason)
 	}
 	return &proto.Empty{}, nil
 }
