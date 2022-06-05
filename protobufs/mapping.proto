@@ -1,0 +1,43 @@
+//
+
+syntax = "proto3";
+
+package mapping;
+
+import "common.proto";
+
+
+service MappingService {
+    rpc CalculateDistance (CalculateDistanceRequest) returns (CalculateDistanceResponse);
+    rpc MakeTimeEstimation (MakeTimeEstimationRequest) returns (MakeTimeEstimationResponse);
+    rpc DoGeocoding (DoGeocodingRequest) returns (DoGeocodingResponse);
+}
+
+message Route {
+    common.Location start = 1;
+    common.Location destination = 2;
+}
+
+message CalculateDistanceRequest {
+    Route route = 1;
+}
+
+message CalculateDistanceResponse {
+    float distance = 1;
+}
+
+message MakeTimeEstimationRequest {
+    Route route = 1;
+}
+
+message MakeTimeEstimationResponse {
+    float eta = 1;
+}
+
+message DoGeocodingRequest {
+    string address = 1;
+}
+
+message DoGeocodingResponse {
+    common.Location Location = 1;
+}

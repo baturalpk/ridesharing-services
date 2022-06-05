@@ -1,0 +1,21 @@
+//
+
+syntax = "proto3";
+
+option go_package = "./genproto";
+
+package common;
+
+
+message Empty { }
+
+message Location {
+    float latitude = 1;
+    float longitude = 2;
+}
+
+enum RideType {
+    DEFAULT = 0;
+    COMFORT = 1;
+    PREMIUM = 2;
+}

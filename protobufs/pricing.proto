@@ -1,0 +1,21 @@
+//
+
+syntax = "proto3";
+
+package pricing;
+
+import "common.proto";
+
+
+service PricingService {
+    rpc CalculateCost (CalculateCostRequest) returns (CalculateCostResponse);
+}
+
+message CalculateCostRequest {
+    common.RideType type = 1;
+    float distance = 2;
+}
+
+message CalculateCostResponse {
+    float cost = 1;
+}

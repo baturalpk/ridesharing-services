@@ -1,4 +1,4 @@
-from base_pb2 import RideType, DEFAULT, COMFORT, PREMIUM
+from common_pb2 import RideType, DEFAULT, COMFORT, PREMIUM
 
 
 _PRICE_PER_DIST = {

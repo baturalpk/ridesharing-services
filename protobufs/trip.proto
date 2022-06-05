@@ -1,0 +1,43 @@
+//
+
+syntax = "proto3";
+
+option go_package = "./genproto";
+
+package trip;
+
+import "common.proto";
+
+
+service TripService {
+    rpc RequestTrip (RequestTripRequest) returns (RequestTripResponse);
+    rpc CancelTrip (CancelTripRequest) returns (common.Empty);
+
+    rpc SeekForTripAsDriver (stream SeekForTripAsDriverRequest) returns (stream SeekForTripAsDriverResponse);
+}
+
+message RequestTripRequest {
+    string rider_id = 1;
+    common.Location start = 2;
+    common.Location destination = 3;
+    common.RideType ride_type = 4;
+}
+
+message RequestTripResponse {
+    string trip_id = 1;
+}
+
+message CancelTripRequest {
+    string trip_id = 1;
+}
+
+message SeekForTripAsDriverRequest {
+    common.Location driver_location = 1;
+}
+
+message SeekForTripAsDriverResponse {
+    string trip_id = 1;
+    string rider_id = 2;
+    common.Location start = 3;
+    common.Location destination = 4;
+}
