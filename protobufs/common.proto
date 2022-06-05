@@ -3,6 +3,7 @@
 syntax = "proto3";
 
 option go_package = "./genproto";
+option csharp_namespace = "mappingservice";
 
 package common;
 
