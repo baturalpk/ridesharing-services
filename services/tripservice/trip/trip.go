@@ -2,12 +2,17 @@ package trip
 
 import (
 	"context"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+
+	"github.com/go-redis/redis/v9"
+)
+
+const (
+	GeoStoreKey = "trip-geo"
 )
 
 type Trip struct {
@@ -24,21 +29,29 @@ type Location struct {
 }
 
 type Repository struct {
-	c *mongo.Collection
+	persist *mongo.Collection
+	geodb   *redis.Client
 }
 
-func NewRepository(coll *mongo.Collection) *Repository {
-	return &Repository{c: coll}
+func NewRepository(coll *mongo.Collection, rcl *redis.Client) *Repository {
+	return &Repository{
+		persist: coll,
+		geodb:   rcl,
+	}
 }
 
 func (r *Repository) CreateTrip(ctx context.Context, trip Trip) (string, *TripError) {
 	trip.CreatedAt = primitive.Timestamp{T: uint32(time.Now().Unix())}
-	doc, err := r.c.InsertOne(ctx, trip)
+	doc, err := r.persist.InsertOne(ctx, trip)
 	if err != nil {
 		return "", NewInternalTripError(err)
 	}
-	id := doc.InsertedID.(primitive.ObjectID)
-	return id.Hex(), nil
+	trip.ID = doc.InsertedID.(primitive.ObjectID)
+
+	if err = r.saveStartLocation(ctx, trip); err != nil {
+		return "", NewInternalTripError(err)
+	}
+	return trip.ID.Hex(), nil
 }
 
 func (r *Repository) DeleteTrip(ctx context.Context, tripID string) *TripError {
@@ -46,28 +59,44 @@ func (r *Repository) DeleteTrip(ctx context.Context, tripID string) *TripError {
 	if err != nil {
 		return NewClientRelatedTripError(err, "the provided 'trip_id' is not valid")
 	}
-	if _, err = r.c.DeleteOne(ctx, bson.M{"_id": id}); err != nil {
+	if _, err = r.persist.DeleteOne(ctx, bson.M{"_id": id}); err != nil {
 		return NewInternalTripError(err)
 	}
 	return nil
 }
 
-func (r *Repository) GetByStartLocationInterval(ctx context.Context, minLoc, maxLoc Location) ([]Trip, *TripError) {
-	opts := options.FindOptions{}
-	opts.SetSort(bson.D{{"created_at", 1}})
-	cur, err := r.c.Find(ctx, bson.D{
-		{"start", bson.D{
-			{"$gte", minLoc},
-			{"$lte", maxLoc},
-		}},
-	}, &opts)
+func (r *Repository) saveStartLocation(ctx context.Context, t Trip) error {
+	cmd := r.geodb.Do(ctx, "GEOADD", GeoStoreKey, float64(t.Start.Long), float64(t.Start.Lat), t.ID.Hex())
+	return cmd.Err()
+}
+
+func (r *Repository) SearchTripByRadiusMeter(ctx context.Context, rad float64, loc Location) (*Trip, *TripError) {
+	// Search a proper trip by radius
+	cmd := r.geodb.Do(ctx, "GEORADIUS", GeoStoreKey, float64(loc.Long), float64(loc.Lat), rad, "M")
+	val, err := cmd.StringSlice()
 	if err != nil {
-		return []Trip{}, NewInternalTripError(err)
+		return nil, NewInternalTripError(err)
+	}
+	if len(val) <= 0 {
+		return nil, nil
+	}
+	// If found, ...
+	// ...choose the first candidate
+	tid := val[0]
+	oid, _ := primitive.ObjectIDFromHex(tid)
+
+	// ...remove from geo store
+	r.geodb.ZRem(ctx, GeoStoreKey, tid)
+
+	// ...fetch full details about the trip
+	doc := r.persist.FindOne(ctx, bson.M{"_id": oid})
+	if err = doc.Err(); err != nil {
+		return nil, NewInternalTripError(err)
 	}
 
-	var docs []Trip
-	if err := cur.All(ctx, &docs); err != nil {
-		return []Trip{}, NewInternalTripError(err)
+	var t Trip
+	if err = doc.Decode(&t); err != nil {
+		return nil, NewInternalTripError(err)
 	}
-	return docs, nil
+	return &t, nil
 }

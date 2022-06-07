@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	TripSeekingRadius = 0.5
+	TripSeekingRadius = 500
 )
 
 func RegisterServer(gsv *grpc.Server, r *trip.Repository) {
@@ -64,20 +64,17 @@ func (s *server) SeekForTripAsDriver(driverSv proto.TripService_SeekForTripAsDri
 		}
 
 		dloc := req.GetDriverLocation()
-		ts, err2 := s.repo.GetByStartLocationInterval(
+		t, err2 := s.repo.SearchTripByRadiusMeter(
 			driverSv.Context(),
+			TripSeekingRadius,
 			trip.Location{
-				Lat:  dloc.Latitude - TripSeekingRadius,
-				Long: dloc.Longitude - TripSeekingRadius,
-			},
-			trip.Location{
-				Lat:  dloc.Latitude + TripSeekingRadius,
-				Long: dloc.Longitude + TripSeekingRadius,
+				Lat:  dloc.Latitude,
+				Long: dloc.Longitude,
 			},
 		)
-		if len(ts) > 0 && err2 == nil {
-			t := ts[0]
-			return driverSv.Send(&proto.SeekForTripAsDriverResponse{
+
+		if t != nil && err2 == nil {
+			if err := driverSv.Send(&proto.SeekForTripAsDriverResponse{
 				TripId:  t.ID.Hex(),
 				RiderId: t.RiderID,
 				Start: &proto.Location{
@@ -88,7 +85,9 @@ func (s *server) SeekForTripAsDriver(driverSv proto.TripService_SeekForTripAsDri
 					Latitude:  t.Destination.Lat,
 					Longitude: t.Destination.Long,
 				},
-			})
+			}); err != nil {
+				return err
+			}
 		}
 	}
 }

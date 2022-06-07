@@ -16,20 +16,25 @@ import (
 func main() {
 	_ = godotenv.Load()
 	port := mustGetenv("PORT")
-	dburi := mustGetenv("MONGO_URI")
-	dbname := mustGetenv("MONGO_DBNAME")
+	mguri := mustGetenv("MONGO_URI")
+	mgdbname := mustGetenv("MONGO_DBNAME")
+	rduri := mustGetenv("REDIS_URI")
 
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Fatalf("failed to create listener: %v", err)
 	}
 
-	if err := InitMongoConnection(dburi, dbname); err != nil {
+	if err := InitMongoConnection(mguri, mgdbname); err != nil {
 		log.Fatalf("failed to init mongodb connection: %v", err)
+	}
+	if err := InitRedisConnection(rduri); err != nil {
+		log.Fatalf("failed to init redis connection: %v", err)
 	}
 
 	repo := trip.NewRepository(
 		GetCollection("trips"),
+		GetRedisClient(),
 	)
 	gsrv := grpc.NewServer()
 	RegisterServer(gsrv, repo)
@@ -38,6 +43,7 @@ func main() {
 	log.Println("starting tripservice")
 	if err := gsrv.Serve(lis); err != nil {
 		CloseMongoConnection()
+		CloseRedisConnection()
 		log.Fatalf("failed to serve: %v", err)
 	}
 }
