@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mappingservice
+spec:
+  selector:
+    matchLabels:
+      app: mappingservice
+  template:
+    metadata:
+      labels:
+        app: mappingservice
+    spec:
+      containers:
+      - name: mappingservice
+        image: mappingservice
+        env:
+          - name: PORT
+            value: "50002"
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 80

@@ -1,0 +1,29 @@
+apiVersion: skaffold/v2beta28
+kind: Config
+metadata:
+  name: ridesharing-services
+build:
+  artifacts:
+  - image: mappingservice
+    context: services/mappingservice
+    docker:
+      dockerfile: Dockerfile
+  - image: pricingservice
+    context: services/pricingservice
+    docker:
+      dockerfile: Dockerfile
+  - image: tripservice
+    context: services/tripservice
+    docker:
+      dockerfile: Dockerfile
+deploy:
+  kubectl:
+    manifests:
+    - manifests/istio-gateway-ingress.yml
+    - manifests/mapping-deployment.yml
+    - manifests/mapping-service.yml
+    - manifests/pricing-deployment.yml
+    - manifests/pricing-service.yml
+    - manifests/secrets.yml
+    - manifests/trip-deployment.yml
+    - manifests/trip-service.yml

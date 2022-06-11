@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tripservice
+spec:
+  selector:
+    matchLabels:
+      app: tripservice
+  template:
+    metadata:
+      labels:
+        app: tripservice
+    spec:
+      containers:
+      - name: tripservice
+        image: tripservice
+        env:
+          - name: PORT
+            value: "50001"
+          - name: MONGO_DBNAME
+            value: ridesharing
+          - name: MONGO_URI
+            valueFrom:
+              secretKeyRef:
+                name: tripsecret
+                key: mongo_uri
+          - name: REDIS_URI
+            valueFrom:
+              secretKeyRef:
+                name: tripsecret
+                key: redis_uri
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 50001

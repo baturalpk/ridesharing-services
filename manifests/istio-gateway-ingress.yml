@@ -1,0 +1,55 @@
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: ridesharing-gateway
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: grpc
+      protocol: GRPC
+    hosts:
+    - "*"
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: ridesharing-ingress
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - ridesharing-gateway
+  http:
+  - name: trip-endpoint
+    match:
+    - uri:
+        exact: /tripservice
+    - port: 50001
+    route:
+    - destination:
+        host: tripservice
+        port:
+          number: 50001
+  - name: mapping-endpoint
+    match:
+    - uri:
+        exact: /mappingservice
+    - port: 50002
+    route:
+    - destination:
+        host: mappingservice
+        port:
+          number: 50002
+  - name: pricing-endpoint
+    match:
+    - uri:
+        exact: /pricingservice
+    - port: 50003
+    route:
+    - destination:
+        host: pricingservice
+        port:
+          number: 50003

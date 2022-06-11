@@ -6,3 +6,6 @@
 **/.vs/
 **/.vscode/
 **/.idea/
+
+**/*secret*.yml
+**/*secret*.yaml

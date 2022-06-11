@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pricingservice
+spec:
+  selector:
+    matchLabels:
+      app: pricingservice
+  template:
+    metadata:
+      labels:
+        app: pricingservice
+    spec:
+      containers:
+      - name: pricingservice
+        image: pricingservice
+        env:
+          - name: PORT
+            value: "50003"
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 50003
