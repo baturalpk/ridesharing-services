@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net"
 	"os"
@@ -20,7 +21,7 @@ func main() {
 	mgdbname := mustGetenv("MONGO_DBNAME")
 	rduri := mustGetenv("REDIS_URI")
 
-	lis, err := net.Listen("tcp", port)
+	lis, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%s", port))
 	if err != nil {
 		log.Fatalf("failed to create listener: %v", err)
 	}
