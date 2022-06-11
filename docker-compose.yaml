@@ -1,0 +1,38 @@
+version: "3.9"
+services:
+  redis:
+    image: redis:7.0.1-alpine3.16
+    # ports:
+    #   - "6379:6379"
+
+  mongo:
+    image: mongo:5.0.9
+    # ports:
+    #   - "27017:27017"
+
+  tripservice:
+    build:
+      context: ./services/tripservice
+    environment:
+      PORT: "50001"
+      MONGO_DBNAME: "ridesharing"
+      MONGO_URI: "mongodb://mongo"
+      REDIS_URI: "redis://redis/0"
+    ports:
+      - "50001:50001"
+
+  mappingservice:
+    build:
+      context: ./services/mappingservice
+    environment:
+      PORT: "50002"
+    ports:
+      - "50002:50002"
+
+  pricingsrvice:
+    build:
+      context: ./services/pricingservice
+    environment:
+      PORT: "50003"
+    ports:
+      - "50003:50003"
