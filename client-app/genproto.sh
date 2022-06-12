@@ -8,4 +8,4 @@ protoc \
     --go_opt=paths=source_relative \
     --go-grpc_out=genproto \
     --go-grpc_opt=paths=source_relative \
-    base.proto
+    common.proto trip.proto mapping.proto pricing.proto

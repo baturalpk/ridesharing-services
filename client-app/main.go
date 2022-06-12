@@ -1,56 +1,65 @@
 package main
 
 import (
-	"context"
-	"log"
-	"time"
+	"fmt"
+
+	"github.com/AlecAivazis/survey/v2"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	"github.com/baturalpk/ridesharing-services/client-app/common"
 	pb "github.com/baturalpk/ridesharing-services/client-app/genproto"
+	"github.com/baturalpk/ridesharing-services/client-app/mapping"
+	"github.com/baturalpk/ridesharing-services/client-app/pricing"
+	"github.com/baturalpk/ridesharing-services/client-app/trip"
+)
+
+const (
+	TripSvAddr    = "127.0.0.1:50001"
+	MappingSvAddr = "127.0.0.1:50002"
+	PricingSvAddr = "127.0.0.1:50003"
+)
+
+var (
+	qMain = []string{
+		"Trip service client",
+		"Mapping service client",
+		"Pricing service client",
+	}
 )
 
 func main() {
-	address := "127.0.0.1:8080"
+	fmt.Println("====================================")
+	fmt.Println("🚖 Welcome to ridesharing-services 👋")
+	fmt.Println("====================================")
+	fmt.Println(common.Info("🚶 Press [Control + C] to leave anytime..."))
 
-	conn, err := grpc.Dial(
-		address,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
+	var ans string
+	err := survey.AskOne(&survey.Select{
+		Message: "Which type of client would you like to create?",
+		Options: qMain,
+		Default: qMain[0],
+	}, &ans)
 	if err != nil {
-		log.Fatalf("grpc: failed to dial: %v", err)
+		common.EvalError(err)
+		return
 	}
 
-	tripclient := pb.NewTripServiceClient(conn)
-
-	resp1, err := tripclient.RequestTrip(context.Background(), &pb.RequestTripRequest{
-		RiderId: "1234",
-		Start: &pb.Location{
-			Latitude:  3,
-			Longitude: 4,
-		},
-		Destination: &pb.Location{
-			Latitude:  5,
-			Longitude: 12,
-		},
-		RideType: pb.RideType_COMFORT,
-	})
-
-	if err != nil {
-		log.Fatalf("trip: requestTrip: error: %v", err)
+	switch ans {
+	case qMain[0]:
+		trip.Handler(pb.NewTripServiceClient(newConnection(TripSvAddr)))
+	case qMain[1]:
+		mapping.Handler(pb.NewMappingServiceClient(newConnection(MappingSvAddr)))
+	case qMain[2]:
+		pricing.Handler(pb.NewPricingServiceClient(newConnection(PricingSvAddr)))
 	}
-	tid := resp1.GetTripId()
-	log.Printf("Requested a new trip, id: %s", tid)
+}
 
-	log.Println("the trip request will be canceled in 10 seconds...")
-	time.Sleep(10 * time.Second)
-
-	_, err = tripclient.CancelTrip(context.Background(), &pb.CancelTripRequest{
-		TripId: tid,
-	})
+func newConnection(addr string) *grpc.ClientConn {
+	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Fatalf("trip: cancelTrip: error: %v", err)
+		common.EvalError(err)
 	}
-	log.Printf("Cancelled the trip (id: %s)", tid)
+	return conn
 }
