@@ -1,4 +1,5 @@
-#
+# ridesharing-services Makefile
+
 SERVICE=ridesharing-services
 
 up:
@@ -7,14 +8,8 @@ up:
 	docker compose up -d
 	@echo ✅ Ready to go...
 
-start:
-	@echo 🚀 $(SERVICE) is being started...
-	docker compose start
+down:
+	@echo ✋ $(SERVICE) is being stopped and destroyed...
+	docker compose down -v --rmi local
 
-stop:
-	@echo ✋ $(SERVICE) is being stopped...
-	docker compose stop
-
-remove:
-	@echo 🗑 $(SERVICE) is being removed permanently...
-	docker compose rm -fsv
+.PHONY: up, down
